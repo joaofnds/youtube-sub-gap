@@ -25,12 +25,10 @@ server.get("/sub-count/:username", async ({ params: { username } }, res) => {
 });
 
 const UPDATE_INTERVAL = 5000;
-io.on("connection", socket => {
-  setInterval(async () => {
-    const stats = await warStats();
-    socket.broadcast.emit("sub-gap-change", stats);
-  }, UPDATE_INTERVAL);
-});
+setInterval(async () => {
+  const stats = await warStats();
+  io.emit("sub-gap-change", stats);
+}, UPDATE_INTERVAL);
 
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => console.log(`listening on port ${PORT}`));
