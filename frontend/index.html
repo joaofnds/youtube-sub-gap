@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>loading...</title>
+    <style>
+      pre {
+        font-size: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <pre></pre>
+  </body>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const titleEl = document.querySelector("title");
+    const codeEl = document.querySelector("pre");
+
+    const socket = io(window.location.href);
+    socket.on("sub-gap-change", stats => {
+      const formatedStats = mapValues(stats, formatNumber);
+      changeStats(formatedStats);
+      changeTitle(formatedStats.gap);
+    });
+
+    const changeTitle = newTitle => (titleEl.innerHTML = newTitle);
+    const changeStats = newStats =>
+      (codeEl.innerHTML = JSON.stringify(newStats, null, 4));
+
+    const formatNumber = number => new Intl.NumberFormat().format(number);
+    const mapValues = (obj, func) =>
+      Object.keys(obj).reduce((newObj, key) => {
+        newObj[key] = func(obj[key]);
+        return newObj;
+      }, {});
+  </script>
+</html>

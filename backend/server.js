@@ -1,12 +1,20 @@
-const server = require("express")();
+const express = require("express");
+const server = express();
 const bodyParser = require("body-parser");
+const http = require("http").Server(server);
+const path = require("path");
+const io = require("socket.io")(http);
+
 const { fetchSubs } = require("./youtube");
+const { warStats } = require("./war");
 
 server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
 
-server.get("/", (_, res) => res.json(200));
+// serve frontend static files
+server.use("/", express.static(path.join(__dirname, "../frontend")));
 
+// fetch sub count for youtube username
 server.get("/sub-count/:username", async ({ params: { username } }, res) => {
   try {
     const subs = await fetchSubs(username);
@@ -16,5 +24,13 @@ server.get("/sub-count/:username", async ({ params: { username } }, res) => {
   }
 });
 
+const UPDATE_INTERVAL = 5000;
+io.on("connection", socket => {
+  setInterval(async () => {
+    const stats = await warStats();
+    socket.broadcast.emit("sub-gap-change", stats);
+  }, UPDATE_INTERVAL);
+});
+
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`listening on port ${PORT}`));
+http.listen(PORT, () => console.log(`listening on port ${PORT}`));
