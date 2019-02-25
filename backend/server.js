@@ -24,7 +24,7 @@ server.get("/sub-count/:username", async ({ params: { username } }, res) => {
   }
 });
 
-const UPDATE_INTERVAL = 5000;
+const UPDATE_INTERVAL = process.env.UPDATE_INTERVAL || 5000;
 setInterval(async () => {
   const stats = await warStats();
   io.emit("sub-gap-change", stats);
