@@ -8,6 +8,10 @@ const io = require("socket.io")(http);
 const { fetchSubs } = require("./youtube");
 const { warStats } = require("./war");
 
+const SUB_GAP_CHANGE = "sub-gap-change";
+
+let lastStats = null;
+
 server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
 
@@ -26,9 +30,11 @@ server.get("/sub-count/:username", async ({ params: { username } }, res) => {
 
 const UPDATE_INTERVAL = process.env.UPDATE_INTERVAL || 5000;
 setInterval(async () => {
-  const stats = await warStats();
-  io.emit("sub-gap-change", stats);
+  lastStats = await warStats();
+  io.emit(SUB_GAP_CHANGE, lastStats);
 }, UPDATE_INTERVAL);
+
+io.on("connection", socket => socket.emit(SUB_GAP_CHANGE, lastStats));
 
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => console.log(`listening on port ${PORT}`));
