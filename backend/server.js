@@ -6,19 +6,14 @@ const path = require("path");
 const io = require("socket.io")(http);
 
 const { fetchSubs } = require("./youtube");
-const { warStats } = require("./war");
-
-const SUB_GAP_CHANGE = "sub-gap-change";
-
-let lastStats = null;
+const { emitStats, emitStatsEvery } = require("./war");
 
 server.use(bodyParser.urlencoded({ extended: true }));
-server.use(bodyParser.json());
 
 // serve frontend static files
 server.use("/", express.static(path.join(__dirname, "../frontend")));
 
-// fetch sub count for youtube username
+// fetch sub count for youtube `:username`
 server.get("/sub-count/:username", async ({ params: { username } }, res) => {
   try {
     const subs = await fetchSubs(username);
@@ -28,13 +23,17 @@ server.get("/sub-count/:username", async ({ params: { username } }, res) => {
   }
 });
 
-const UPDATE_INTERVAL = process.env.UPDATE_INTERVAL || 5000;
-setInterval(async () => {
-  lastStats = await warStats();
-  io.emit(SUB_GAP_CHANGE, lastStats);
-}, UPDATE_INTERVAL);
+server.all("*", (_, res) => res.sendStatus(404));
 
-io.on("connection", socket => socket.emit(SUB_GAP_CHANGE, lastStats));
+// update war stats every UPDATE_INTERVAL milliseconds
+const UPDATE_INTERVAL = process.env.UPDATE_INTERVAL || 5000;
+emitStatsEvery(io, UPDATE_INTERVAL);
+
+// emit war stats when server boot up
+updateStats();
+
+// send lastStats for each new connection
+io.on("connection", emitStats);
 
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => console.log(`listening on port ${PORT}`));
